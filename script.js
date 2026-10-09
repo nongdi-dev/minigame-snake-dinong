@@ -11,7 +11,6 @@ let cellSize = 20;
 let gameState = "ready";
 let snake = [];
 let direction = { x: 1, y: 0 };
-let keyQueue = [];
 let moveTimer = 0;
 let lastTime = 0;
 
@@ -19,7 +18,7 @@ function resetGame() {
   let middle = Math.floor(ROWS / 2);
   snake = [{ x: 3, y: middle }, { x: 2, y: middle }, { x: 1, y: middle }];
   direction = { x: 1, y: 0 };
-  keyQueue = [];
+  clearKey();
   moveTimer = 0;
   gameState = "ready";
 }
@@ -33,9 +32,7 @@ function update(delta) {
 }
 
 function moveSnake() {
-  if (keyQueue.length > 0) {
-    direction = keyQueue.shift();
-  }
+  direction = getDirection(direction);
 
   let newX = snake[0].x + direction.x;
   let newY = snake[0].y + direction.y;
@@ -85,52 +82,6 @@ function gameLoop(time) {
   draw();
   requestAnimationFrame(gameLoop);
 }
-//quay đầu
-function addDirection(newDir) {
-  let last = direction;
-  if (keyQueue.length > 0) {
-    last = keyQueue[keyQueue.length - 1];
-  }
-  if (newDir.x === last.x && newDir.y === last.y) {
-    return;
-  }
-  if (newDir.x + last.x === 0 && newDir.y + last.y === 0) {
-    return;
-  }
-  if (keyQueue.length < 2) {
-    keyQueue.push(newDir);
-  }
-}
-
-document.addEventListener("keydown", function (event) {
-  let key = event.key;
-
-  let newDir = null;
-  if (key === "ArrowUp" || key === "w" || key === "W") {
-    newDir = { x: 0, y: -1 };
-  } else if (key === "ArrowDown" || key === "s" || key === "S") {
-    newDir = { x: 0, y: 1 };
-  } else if (key === "ArrowLeft" || key === "a" || key === "A") {
-    newDir = { x: -1, y: 0 };
-  } else if (key === "ArrowRight" || key === "d" || key === "D") {
-    newDir = { x: 1, y: 0 };
-  }
-  if (newDir === null) {
-    return;
-  }
-  event.preventDefault();
-
-  if (gameState === "ready") {
-    if (newDir.x === -1) {
-      return;
-    }
-    direction = newDir;
-    gameState = "playing";
-  } else if (gameState === "playing") {
-    addDirection(newDir);
-  }
-});
-
 //run
 canvas.width = cellSize * COLS;
 canvas.height = cellSize * ROWS;
