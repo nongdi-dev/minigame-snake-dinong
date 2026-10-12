@@ -2,16 +2,16 @@ let keyQueue = [];
 // Key sang Hướng
 function getKeyToDirection(key) {
     if (key === "ArrowUp" || key ==="W" || key === "w") {
-        return {x: 0, y: -1};
+        return {x: -1, y: 0};
     }
     if (key === "ArrowDown" || key ==="S" || key === "s") {
-        return {x: 0, y: 1};
-    }
-    if (key === "ArrowRight" || key ==="D" || key === "d") {
         return {x: 1, y: 0};
     }
+    if (key === "ArrowRight" || key ==="D" || key === "d") {
+        return {x: 0, y: 1};
+    }
     if (key === "ArrowLeft" || key ==="A" || key === "a") {
-        return {x: -1, y: 0};
+        return {x: 0, y: -1};
     }
     return null;
 }
@@ -36,7 +36,7 @@ function addDirection(dir){
         keyQueue.push(dir);
     }
 }
-//lấy hướng
+//lấy hướng tiếp theo
 function getDirection(temp){
     if (keyQueue.length > 0) {
         return keyQueue.shift(); //xóa và trả về hướng tiếp theo

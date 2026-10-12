@@ -4,14 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Snake</title>
-  <link rel="stylesheet" href="../../Downloads/github-stages/02-ran-di-chuyen/style.css">
+<!--  <link rel="stylesheet" href="../../Downloads/github-stages/02-ran-di-chuyen/style.css">-->
+  <link rel="stylesheet" href="style.css">
+
 </head>
 <body>
-
-<div id="game">
-  <canvas id="canvas"></canvas>
+<p id="hud">Điểm: <b id="score">0</b></p>
+<div id="board">
+  <table id="game"></table>
+  <div id="effect-bar"><div id="effect-fill"></div></div>
 </div>
+<p id="info">Nhấn phím mũi tên hoặc WASD để bắt đầu</p>
 <script src="input.js"></script>
+<script src="food.js"></script>
 <script src="script.js"></script>
+
 </body>
 </html>

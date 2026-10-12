@@ -1,89 +1,134 @@
-const LCD_BG = "#a8b04a";
-const LCD_INK = "#1a1a10";
-const STEP_TIME = 180;
-const COLS = 20;
-const ROWS = 20;
+var col = 20;
+var row = 20;
+var speed = 180;
+var currentSpeed = speed;
+var game = document.getElementById("game");
+var gameState = "ready";
+var snake = [];
+var direction = {x: 0, y: 1};
+var score = 0;
 
-let canvas = document.getElementById("canvas");
-let ctx = canvas.getContext("2d");
-let cellSize = 20;
+initGame(col, row);
+resetGame();
 
-let gameState = "ready";
-let snake = [];
-let direction = { x: 1, y: 0 };
-let moveTimer = 0;
-let lastTime = 0;
-
-function resetGame() {
-  let middle = Math.floor(ROWS / 2);
-  snake = [{ x: 3, y: middle }, { x: 2, y: middle }, { x: 1, y: middle }];
-  direction = { x: 1, y: 0 };
-  clearKey();
-  moveTimer = 0;
-  gameState = "ready";
-}
-
-function update(delta) {
-  moveTimer = moveTimer + delta;
-  if (moveTimer >= STEP_TIME) {
-    moveTimer = moveTimer - STEP_TIME;
+function gameLoop() {
+  if (gameState === "playing") {
     moveSnake();
+    cleanupFood();
+  }
+  render();
+  setTimeout(gameLoop, currentSpeed);
+}
+gameLoop();
+
+//add mồi đặt biệt
+setInterval(() => {
+  if (gameState === "playing") {
+    let types = ["gold", "speed", "slow"];
+    let randomType = types[parseInt(Math.random() * types.length)];
+    placeFood(randomType);
+  }
+}, 8000);
+
+//tạo bảng
+function initGame(col, row) {
+  for (let i = 0; i < row; i++) {
+    let tr = document.createElement("tr");
+    for (let j = 0; j < col; j++) {
+      let td = document.createElement("td");
+      td.id = "cell_" + i + "_" + j;
+      td.classList.add("cell");
+      tr.appendChild(td);
+    }
+    game.appendChild(tr);
   }
 }
 
+//tạo snake
+function initSnake() {
+  let x = Math.floor(row / 2);
+  return [{x, y: 1}, {x, y: 2}, {x, y: 3}];
+}
+
+function resetGame() {
+  snake = initSnake();
+  direction = {x: 0, y: 1};
+  clearKey();
+  score = 0;
+  gameState = "ready";
+  resetFood();
+  resetEffect();
+  document.getElementById("info").textContent = "Nhấn phím mũi tên hoặc WASD để bắt đầu";
+}
+
+//di chuyển rắn
 function moveSnake() {
   direction = getDirection(direction);
 
-  let newX = snake[0].x + direction.x;
-  let newY = snake[0].y + direction.y;
-  if (newX < 0) {
-    newX = COLS - 1;
-  } else if (newX >= COLS) {
-    newX = 0;
+  let head = snake.at(-1);
+  let newHead = {x: head.x + direction.x, y: head.y + direction.y};
+  //đi hết mép thì xuất hiện ở mép đối diện
+  if (newHead.x < 0) {
+    newHead.x = row - 1;
+  } else if (newHead.x >= row) {
+    newHead.x = 0;
   }
-  if (newY < 0) {
-    newY = ROWS - 1;
-  } else if (newY >= ROWS) {
-    newY = 0;
+  if (newHead.y < 0) {
+    newHead.y = col - 1;
+  } else if (newHead.y >= col) {
+    newHead.y = 0;
   }
 
-  snake.unshift({ x: newX, y: newY });
-  snake.pop();
+  let food = getFoodAt(newHead.x, newHead.y);
+  let grow = false;
+  if (food !== null) {
+    grow = foodTypes[food.type].grow;
+  }
+
+  //cắn thân là thua
+  let start = 1;
+  if (grow === true) {
+    start = 0;
+  }
+  for (let i = start; i < snake.length; i++) {
+    if (snake[i].x === newHead.x && snake[i].y === newHead.y) {
+      gameOver();
+      return;
+    }
+  }
+
+  snake.push(newHead);
+  if (food !== null) {
+    eatFood(food);
+  }
+  if (grow === false) {
+    snake.shift();
+  }
 }
 
-function draw() {
-  ctx.fillStyle = LCD_BG;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.fillStyle = LCD_INK;
-  for (let i = 0; i < snake.length; i++) {
-    ctx.fillRect(snake[i].x * cellSize + 1, snake[i].y * cellSize + 1, cellSize - 2, cellSize - 2);
+//vẽ
+function render() {
+  //xóa hết
+  for (let i = 0; i < row; i++) {
+    for (let j = 0; j < col; j++) {
+      document.getElementById("cell_" + i + "_" + j).className = "cell";
+    }
   }
-  if (gameState === "ready") {
-    ctx.font = "bold 14px 'Courier New', monospace";
-    ctx.textAlign = "center";
-    ctx.fillText("Nhấn phím mũi tên hoặc WASD để bắt đầu", canvas.width / 2, canvas.height / 2 - 40);
+  //thân rắn
+  for (const dot of snake) {
+    document.getElementById("cell_" + dot.x + "_" + dot.y).classList.add("dot");
   }
+  //đầu rắn
+  let head = snake.at(-1);
+  document.getElementById("cell_" + head.x + "_" + head.y).classList.add("head");
+  //mồi
+  renderFood();
+  //điểm
+  document.getElementById("score").textContent = score;
 }
 
-function gameLoop(time) {
-  if (lastTime === 0) {
-    lastTime = time;
-  }
-  let delta = time - lastTime;
-  lastTime = time;
-  if (delta > 100) {
-    delta = 100;
-  }
-
-  if (gameState === "playing") {
-    update(delta);
-  }
-  draw();
-  requestAnimationFrame(gameLoop);
+//thua
+function gameOver() {
+  gameState = "over";
+  document.getElementById("info").textContent = "Thua rồi! Nhấn Enter để chơi lại";
 }
-//run
-canvas.width = cellSize * COLS;
-canvas.height = cellSize * ROWS;
-resetGame();
-requestAnimationFrame(gameLoop);
