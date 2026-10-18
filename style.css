@@ -69,7 +69,52 @@ body {
 #effect-fill {
   width: 0;
   height: 100%;
-  background: repeating-linear-gradient(to right, #1a1a10 0 8px, transparent 8px 10px);
+  background: #1a1a10;
+}
+
+.hidden {
+  display: none;
+}
+
+.block {
+  background: #1a1a10;
+}
+
+#game.nowall {
+  border-style: dashed;
+}
+
+#levelList {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 360px;
+  margin: 20px auto 0;
+}
+
+.card {
+  padding: 14px;
+  border: 3px solid #1a1a10;
+  background: #a8b04a;
+  color: #1a1a10;
+  font-family: "Courier New", Courier, monospace;
+  font-weight: 700;
+  cursor: pointer;
+}
+.card strong {
+  display: block;
+  font-size: 18px;
+}
+.card span {
+  font-size: 13px;
+}
+.card:hover {
+  background: #1a1a10;
+  color: #a8b04a;
+}
+
+#backButton {
+  margin-top: 10px;
 }
 
 /*# sourceMappingURL=style.css.map */

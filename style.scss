@@ -78,5 +78,56 @@ body {
 #effect-fill {
   width: 0;
   height: 100%;
-  background: repeating-linear-gradient(to right, $line 0 8px, transparent 8px 10px);
+  background: $line;
+}
+.hidden {
+  display: none;
+}
+
+// vật cản
+.block {
+  background: $line;
+}
+
+// màn không tường (viền nét đứt)
+#game.nowall {
+  border-style: dashed;
+}
+
+// danh sách màn
+#levelList {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 360px;
+  margin: 20px auto 0;
+}
+
+// thẻ màn và Chọn màn
+.card {
+  padding: 14px;
+  border: 3px solid $line;
+  background: $background0;
+  color: $line;
+  font-family: $font;
+  font-weight: 700;
+  cursor: pointer;
+
+  strong {
+    display: block;
+    font-size: 18px;
+  }
+
+  span {
+    font-size: 13px;
+  }
+
+  &:hover {
+    background: $line;
+    color: $background0;
+  }
+}
+
+#backButton {
+  margin-top: 10px;
 }

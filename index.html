@@ -9,15 +9,21 @@
 
 </head>
 <body>
-<p id="hud">Điểm: <b id="score">0</b></p>
-<div id="board">
-  <table id="game"></table>
-  <div id="effect-bar"><div id="effect-fill"></div></div>
+<div id="menu">
+  <h1>Chọn Màn</h1>
+  <div id="levelList"></div>
 </div>
-<p id="info">Nhấn phím mũi tên hoặc WASD để bắt đầu</p>
-<script src="input.js"></script>
-<script src="food.js"></script>
-<script src="script.js"></script>
 
+<div id="gameplay" class="hidden"></div>
+  <p id="hud">Điểm: <b id="score">0</b></p>
+  <div id="board">
+    <table id="game"></table>
+    <div id="effect-bar"><div id="effect-fill"></div></div>
+    <button id="btnMenu" class="menu">Màn chơi</button>
+  </div>
+<p id="info">Nhấn phím mũi tên hoặc WASD để bắt đầu</p>
+
+
+<script src="script.js"></script>
 </body>
 </html>
