@@ -14,15 +14,19 @@
   <div id="levelList"></div>
 </div>
 
-<div id="gameplay" class="hidden"></div>
+<div id="gameplay" class="hidden">
   <p id="hud">Điểm: <b id="score">0</b></p>
   <div id="board">
+    <div id="boss-bar" class="hidden">
+      <span id="boss-text"></span>
+      <div id="boss-hp"><div id="boss-fill"></div></div>
+    </div>
     <table id="game"></table>
     <div id="effect-bar"><div id="effect-fill"></div></div>
     <button id="btnMenu" class="menu">Màn chơi</button>
   </div>
-<p id="info">Nhấn phím mũi tên hoặc WASD để bắt đầu</p>
-
+  <p id="info">Nhấn phím mũi tên hoặc WASD để bắt đầu</p>
+</div>
 
 <script src="script.js"></script>
 </body>

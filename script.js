@@ -10,7 +10,11 @@ var direction = {x: 0, y: 1};
 var score = 0;
 var level = null;
 var block = [];
-
+var timeBoss = 0;
+var stateBlockBoss = [];
+var lastLoop = Date.now();
+var doorClose = [];
+var doorState = [];
 // Key sang Hướng
 function getKeyToDirection(key) {
   if (key === "ArrowUp" || key ==="W" || key === "w") {
@@ -100,7 +104,7 @@ function findEmptyCell() {
     if (getFoodAt(cell.x, cell.y) !== null) {
       ok = false;
     }
-    if (isBlock(cell.x, cell.y) === true) {
+    if (isBlock(cell.x, cell.y) === true || isSwap(cell.x, cell.y) === true) {
       ok = false;
     }
   }
@@ -174,9 +178,13 @@ function eatFood(food) {
 //xóa mồi hết time
 function cleanupFood() {
   let now = Date.now();
+  let t = 1;
+  if (level.foodTime !== undefined) {
+    t = level.foodTime;
+  }
   for (let i = foods.length - 1; i >= 0; i--) {
     let food = foods[i];
-    if (foodTypes[food.type].time > 0 && now - food.created > foodTypes[food.type].time) {
+    if (foodTypes[food.type].time > 0 && now - food.created > foodTypes[food.type].time * t) {
       foods.splice(i, 1);
     }
   }
@@ -194,8 +202,33 @@ var levels = [
   {name: "Màn 2", col: 20, row: 20, wall: true, block: []},
   {name: "Màn 3", col: 25, row: 20, wall: false, block: [
       {x: 4, y: 5, h: 6, w: 1}, {x: 10, y: 19, h: 6, w: 1},
-      {x: 14, y: 10, h: 1, w: 6}, {x: 5, y: 10, h: 1, w: 6}
-    ]}
+      {x: 14, y: 10, h: 1, w: 6}, {x: 5, y: 10, h: 1, w: 6} ]},
+  {name: "Màn 4", col: 60, row: 30, wall: false, see: 5, foodTime: 2, block:[
+      {x: 5, y: 10, h: 8, w: 1}, {x: 20, y: 15, h: 1, w: 12},
+      {x: 8, y: 30, h: 1, w: 10}, {x: 15, y: 45, h: 10, w: 1},
+      {x: 24, y: 5, h: 1, w: 8}, {x: 3, y: 50, h: 1, w: 6},
+      {x: 12, y: 20, h: 1, w: 8}, {x: 2, y: 22, h: 6, w: 1},
+      {x: 26, y: 30, h: 1, w: 12}, {x: 10, y: 38, h: 6, w: 1},
+      {x: 5, y: 55, h: 8, w: 1}, {x: 20, y: 52, h: 1, w: 7},
+      {x: 22, y: 35, h: 4, w: 1} ]},
+  {name: "Màn 5", col: 20, row: 20, wall: true,foodTime: 3 , block: [
+      {x: 0, y: 10, h: 9, w: 1}, {x: 11, y: 10, h: 9, w: 1},
+      {x: 12, y: 11, h: 1, w: 4}, {x: 12, y: 17, h: 1, w: 3} ],
+    door: [
+      {x: 9, y: 10, h: 2, w: 1, closed: true},
+      {x: 12, y: 15, h: 1, w: 2, closed: true} ],
+    swap: [
+      {x: 10, y: 6,  doors: [0]},
+      {x: 3,  y: 3,  doors: [0]},
+      {x: 5,  y: 15, doors: [0, 1]},
+      {x: 2,  y: 18, doors: [1]},
+      {x: 17, y: 13, doors: [0, 1]} ]},
+  {name: "Màn 6", col: 25, row: 20, wall: true, boss: 50,
+    block: [{x: 8, y: 10, h: 4, w: 5}],
+    blockBoss: [{x: 3, y: 4, h: 1, w: 10, an: 3000, baoTruoc: 1000, hien: 3000, tre: 0},
+      {x: 16, y: 11, h: 1, w: 10, an: 3000, baoTruoc: 1000, hien: 3000, tre: 2000},
+      {x: 4, y: 19, h: 9, w: 1, an: 3000, baoTruoc: 1000, hien: 3000, tre: 4000},
+      {x: 11, y: 6, h: 6, w: 1, an: 3000, baoTruoc: 1000, hien: 3000, tre: 6000} ]}
 ]
 
 createMenu();
@@ -203,10 +236,14 @@ loadMenu();
 document.getElementById("btnMenu").onclick = backToMenu;
 
 function gameLoop() {
+  var now = Date.now();
   if (gameState === "playing") {
     moveSnake();
+    updateDoor();
     cleanupFood();
+    updateBlockBoss(now - lastLoop);
   }
+  lastLoop = now;
   render();
   setTimeout(gameLoop, currentSpeed);
 }
@@ -287,7 +324,7 @@ function moveSnake() {
       return;
     }
   }
-  //đi hết mép thì xuất hiện ở mép đối diện
+  //đi hết ra ở mép đối diện
   if (newHead.x < 0) {
     newHead.x = row - 1;
   } else if (newHead.x >= row) {
@@ -309,6 +346,9 @@ function moveSnake() {
   if (food !== null) {
     grow = foodTypes[food.type].grow;
   }
+  if (level.boss !== undefined) {
+    grow = false;
+  }
 
   //cắn thân là thua
   let start = 1;
@@ -323,11 +363,16 @@ function moveSnake() {
   }
 
   snake.push(newHead);
+  stepOnSwap(newHead.x, newHead.y);
   if (food !== null) {
     eatFood(food);
   }
   if (grow === false) {
     snake.shift();
+  }
+  //boss 0 máu
+  if (level.boss !== undefined && score >= level.boss) {
+    gameWin();
   }
 }
 
@@ -346,6 +391,8 @@ function render() {
       }
     }
   }
+  veBaoTruoc();
+  drawDoor();
   //thân rắn
   for (const dot of snake) {
     document.getElementById("cell_" + dot.x + "_" + dot.y).classList.add("dot");
@@ -355,8 +402,14 @@ function render() {
   document.getElementById("cell_" + head.x + "_" + head.y).classList.add("head");
   //mồi
   renderFood();
+  //sương mù
+  if (level.see !== undefined) {
+    drawFog();
+  }
   //điểm
   document.getElementById("score").textContent = score;
+  //máu boss
+  renderBoss();
 }
 
 //thua
@@ -380,6 +433,8 @@ function startLevel(index) {
   level = levels[index];
   col = level.col;
   row = level.row;
+  resetBlockBoss();
+  resetDoor();
   createBlock();
   game.replaceChildren();//xóa bảng cũ
   if (level.wall === true) {
@@ -413,6 +468,11 @@ function createBlock() {
       }
     }
   }
+  //block boss đang hiện và cửa đang đóng
+  if (level.blockBoss !== undefined) {
+    addBlockBoss();
+  }
+  addDoorBlock();
 }
 //check có cản k
 function isBlock(x, y) {
@@ -429,4 +489,245 @@ function countBlock() {
     }
   }
   return count;
+}
+
+//reset trạng thái cửa
+function resetDoor() {
+  doorClose = [];
+  doorState = [];
+  if (level.door !== undefined) {
+    for (const d of level.door) {
+      doorClose.push(d.closed === true);
+      doorState.push(d.closed === true);
+    }
+  }
+}
+//add cửa đang đóng vào block
+function addDoorBlock() {
+  if (level.door === undefined) {
+    return;
+  }
+  for (let k = 0; k < level.door.length; k++) {
+    if (doorClose[k] === true) {
+      let d = level.door[k];
+      for (let i = d.x; i < d.x + d.h; i++) {
+        for (let j = d.y; j < d.y + d.w; j++) {
+          block[i][j] = true;
+        }
+      }
+    }
+  }
+}
+//ô là công tắc k
+function isSwap(x, y) {
+  if (level.swap === undefined) {
+    return false;
+  }
+  for (const s of level.swap) {
+    if (s.x === x && s.y === y) {
+      return true;
+    }
+  }
+  return false;
+}
+//đảo trạng thái công tắc khi đi qua
+function stepOnSwap(x, y) {
+  if (level.swap === undefined) {
+    return;
+  }
+  for (const s of level.swap) {
+    if (s.x === x && s.y === y) {
+      for (const k of s.doors) {
+        doorState[k] = !doorState[k];
+      }
+    }
+  }
+}
+
+function updateDoor() {
+  if (level.door === undefined) {
+    return;
+  }
+  let doi = false;
+  for (let k = 0; k < level.door.length; k++) {
+    if (doorState[k] === doorClose[k]) {
+      continue;
+    }
+    //còn snake thì chờ
+    if (doorState[k] === true && checkSnakeInBlock(level.door[k]) === true) {
+      continue;
+    }
+    doorClose[k] = doorState[k];
+    doi = true;
+  }
+  if (doi === true) {
+    createBlock();
+    chuyenMoi();
+  }
+}
+//vẽ cửa và công tắc
+function drawDoor() {
+  if (level.door === undefined) {
+    return;
+  }
+  for (let k = 0; k < level.door.length; k++) {
+    let d = level.door[k];
+    let css = "baotruoc";
+    if (doorClose[k] === true) {
+      css = "door";
+    } else if (doorState[k] === true) {
+      css = "baotruoc"; //sắp đóng
+    }
+    for (let i = d.x; i < d.x + d.h; i++) {
+      for (let j = d.y; j < d.y + d.w; j++) {
+        document.getElementById("cell_" + i + "_" + j).classList.add(css);
+      }
+    }
+  }
+  if (level.swap !== undefined) {
+    for (const s of level.swap) {
+      document.getElementById("cell_" + s.x + "_" + s.y).classList.add("swap");
+    }
+  }
+}
+//sương mù
+function drawFog() {
+  let head = snake.at(-1);
+  let r = level.see;
+  for (let i = 0; i < row; i++) {
+    for (let j = 0; j < col; j++) {
+      let dx = Math.abs(i - head.x);
+      let dy = Math.abs(j - head.y);
+      //không block
+      if (level.wall !== true) {
+        dx = Math.min(dx, row - dx);
+        dy = Math.min(dy, col - dy);
+      }
+      if ((dx > r || dy > r) && getFoodAt(i, j) === null) {
+        document.getElementById("cell_" + i + "_" + j).className = "cell fog";
+      }
+    }
+  }
+}
+
+//thắng
+function gameWin() {
+  gameState = "win";
+  document.getElementById("info").textContent = "Bạn đã WIN";
+}
+//reset giờ và state block boss
+function resetBlockBoss() {
+  timeBoss = 0;
+  stateBlockBoss = [];
+  if (level.blockBoss !== undefined) {
+    for (let i = 0; i < level.blockBoss.length; i++) {
+      stateBlockBoss.push(false);
+    }
+  }
+}
+//trạng thái block
+function stateBoss(g) {
+  let t = timeBoss - g.tre;
+  if (t < 0) {
+    return "an";
+  }
+  t = t % (g.an + g.baoTruoc + g.hien);
+  if (t < g.an) {
+    return "an";
+  }
+  if (t < g.an + g.baoTruoc) {
+    return "baotruoc";
+  }
+  return "hien";
+}
+//kiểm tra block có snake k
+function checkSnakeInBlock(g) {
+  for (const dot of snake) {
+    if (dot.x >= g.x && dot.x < g.x + g.h && dot.y >= g.y && dot.y < g.y + g.w) {
+      return true;
+    }
+  }
+  return false;
+}
+//cập nhật block boss, delta là time vừa trôi qua
+function updateBlockBoss(delta) {
+  if (level.blockBoss === undefined) {
+    return;
+  }
+  if (delta > 500) {
+    delta = 500;
+  }
+  timeBoss = timeBoss + delta;
+  let doi = false;
+  for (let k = 0; k < level.blockBoss.length; k++) {
+    let gd = stateBoss(level.blockBoss[k]);
+    if (gd === "hien") {
+      //có rắn trong vùng thì đợi
+      if (stateBlockBoss[k] === false && checkSnakeInBlock(level.blockBoss[k]) === false) {
+        stateBlockBoss[k] = true;
+        doi = true;
+      }
+    } else if (stateBlockBoss[k] === true) {
+      stateBlockBoss[k] = false;
+      doi = true;
+    }
+  }
+  if (doi === true) {
+    createBlock();
+    chuyenMoi();
+  }
+}
+//thêm blockBoss đang hiện vào bảng vật cản
+function addBlockBoss() {
+  for (let k = 0; k < level.blockBoss.length; k++) {
+    if (stateBlockBoss[k] === true) {
+      let g = level.blockBoss[k];
+      for (let i = g.x; i < g.x + g.h; i++) {
+        for (let j = g.y; j < g.y + g.w; j++) {
+          block[i][j] = true;
+        }
+      }
+    }
+  }
+}
+//mồi trong block chuyển sang ô trống
+function chuyenMoi() {
+  for (const food of foods) {
+    if (isBlock(food.x, food.y) === true) {
+      let cell = findEmptyCell();
+      food.x = cell.x;
+      food.y = cell.y;
+    }
+  }
+}
+//vẽ vùng báo trước
+function veBaoTruoc() {
+  if (level.blockBoss === undefined) {
+    return;
+  }
+  for (let k = 0; k < level.blockBoss.length; k++) {
+    let g = level.blockBoss[k];
+    if (stateBlockBoss[k] === false && stateBoss(g) !== "an") {
+      for (let i = g.x; i < g.x + g.h; i++) {
+        for (let j = g.y; j < g.y + g.w; j++) {
+          document.getElementById("cell_" + i + "_" + j).classList.add("baotruoc");
+        }
+      }
+    }
+  }
+}
+//máu boss
+function renderBoss() {
+  let bar = document.getElementById("boss-bar");
+  if (level.boss === undefined) {
+    bar.classList.add("hidden");
+    return;
+  }
+  bar.classList.remove("hidden");
+  let hp = level.boss - score;
+  if (hp < 0) {
+    hp = 0;
+  }
+  document.getElementById("boss-text").textContent = "Boss " + hp + "/" + level.boss;
+  document.getElementById("boss-fill").style.width = (hp / level.boss * 100) + "%";
 }

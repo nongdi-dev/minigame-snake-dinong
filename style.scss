@@ -1,5 +1,6 @@
 $background0: #a8b04a;
 $line: #1a1a10;
+$fog: #3e401f;
 $font: "Courier New", Courier, monospace;
 $cell: 20px;
 
@@ -29,7 +30,11 @@ body {
   height: $cell;
   padding: 0;
 }
-
+.swap {
+  background: radial-gradient(circle, $line 30%, transparent 32%);
+  outline: 2px solid $line;
+  outline-offset: -2px;
+  }
 // thân rắn
 .dot {
   background: $line;
@@ -89,6 +94,14 @@ body {
   background: $line;
 }
 
+.door {
+  background: repeating-linear-gradient(45deg, $line 0 3px, $background0 3px 6px);
+}
+
+.fog {
+  background: $fog;
+}
+
 // màn không tường (viền nét đứt)
 #game.nowall {
   border-style: dashed;
@@ -130,4 +143,35 @@ body {
 
 #backButton {
   margin-top: 10px;
+}
+
+// thanh máu boss
+#boss-bar {
+  margin-bottom: 8px;
+  font-size: 14px;
+
+  &:not(.hidden) {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+}
+
+#boss-hp {
+  flex: 1;
+  height: 14px;
+  border: 3px solid $line;
+}
+
+#boss-fill {
+  width: 100%;
+  height: 100%;
+  background: $line;
+  transition: width 0.3s linear;
+}
+
+// vùng block boss sắp hiện (viền nét đứt)
+.baotruoc {
+  outline: 2px dashed $line;
+  outline-offset: -3px;
 }
